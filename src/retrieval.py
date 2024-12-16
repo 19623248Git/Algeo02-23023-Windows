@@ -173,5 +173,16 @@ def main():
 
     print("Total estimated time: ", end_time - start_time)
 
+    total_time = end_time - start_time
+
+    # Format total_time to two decimal places
+    total_time = round(total_time, 2)
+
+    time_path = dir_path + "/time.txt"
+
+    # Write the total time to the file
+    with open(time_path, 'w') as file:
+        file.write(f"Total estimated time: {total_time}\n")
+
 if __name__ == "__main__":
     main()

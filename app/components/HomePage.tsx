@@ -6,6 +6,7 @@ import { FC } from 'react';
 import * as Tone from 'tone';
 import { Midi } from '@tonejs/midi';
 import Microphone from './MicrophoneParse';
+import fs from 'fs';
 
 interface DatasetItem {
   song: string;
@@ -29,6 +30,8 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
   const [datasetLoading, setdatasetLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [queried, setQueried] = useState(false);
+  const [time, setTime] = useState<string | null>(null);
+  const [errortime, setErrortime] = useState<string | null>(null);
 
   const fetchSessionId = async () => {
     const response = await fetch("/api/generate-session");
@@ -489,7 +492,26 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       setLoading(false);
       setQueried(true);
     }
+    
+    try {
+      const response = await fetch(`/api/get-time`);
+
+      if (response.ok) {
+        const data = await response.json();
+        setTime(data.content); // Set the content in state
+        console.log(time)
+      } else {
+        const errorData = await response.json();
+        setErrortime(errorData.error); // Handle error from API
+        console.log(errortime)
+      }
+    } catch (err) {
+      console.error('Error fetching file:', err);
+      setErrortime('An unexpected error occurred.');
+    }
   }
+
+  
 
   const HandleDeleteQuery = async () => {
     try {
@@ -510,6 +532,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       setQueried(false);
       setImageFile(null);
       setAudioFile(null);
+      setTime(null);
     }
   }
 
@@ -520,6 +543,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
         <div className="flex flex-col items-center w-full gap-3 mb-2">
           {/* Upload Preview */}
           <div className="flex flex-col items-center mt-4">
+            {time ? <p className='py-4 text-black'>{time}</p> : <></>}
             {activeTab === 'album' && imageFile ? (
               <>
                 <img
@@ -555,7 +579,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
                 <span className="font-medium text-[#3a5050eb]">Please upload audio</span>
               </div>
             ) : null}
-          </div>
+          </div>  
         </div>
 
         {/* File upload buttons */}
@@ -678,7 +702,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
             {coverDatasetFile && <p className="text-white">cover: {coverDatasetFile.name}</p>}
             {musicDatasetFile && <p className="text-white">music: {musicDatasetFile.name}</p>}
             {mapperFile && <p className="text-white">mapper: {mapperFile.name}</p>}
-            {datasetLoading && <p className="text-center text-red-700 py-1">Loading datasets & mapper</p>}
+            {datasetLoading && <p className="py-1 text-center text-red-700">Loading datasets & mapper</p>}
             {uploadSuccessMessage && <p className="text-white">Upload Berhasil</p>}
             {uploadFailMessage && <p className="text-white">{uploadFailMessage}</p>}
           </div>
@@ -740,7 +764,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
                   {entry.song}
                 </p>
                 <p className="pl-2 mb-2 overflow-hidden font-medium whitespace-normal text-start text-ellipsis">
-                  {entry.audio_similarity ? `cosine_audio_distance: ${entry.audio_similarity}` : ""}
+                  {entry.audio_similarity ? `cosine_audio_distance: ${entry.audio_similarity}%` : ""}
                 </p>
                 <p className="pl-2 mb-2 overflow-hidden font-medium whitespace-normal text-start text-ellipsis">
                   {entry.image_distance ? `euclidean_image_distance: ${entry.image_distance}`: ""} 
