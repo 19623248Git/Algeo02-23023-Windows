@@ -83,8 +83,8 @@ def fix_overlap_and_extract_melody(file_path, track_idx):
     melody = []  # format (pitch, time, bool, velocity, abs_time)
 
     for massage in main_track:
-        abs_time = abs_time+massage.time 
-        if massage.type == 'note_on' and massage.channel!=9:
+        abs_time = abs_time+massage.time # Always update abs_time with message time
+        if massage.type == 'note_on':
             if len(temp) == 0:
                 pitch = massage.note
                 time = massage.time
@@ -95,19 +95,21 @@ def fix_overlap_and_extract_melody(file_path, track_idx):
                 if temp[0] < massage.note:
                     temp[0] = massage.note
                     melody[-1] = (temp[0], *melody[-1][1:])
-            elif len(temp) != 0 and massage.time != 0:
-                pitch = massage.note
-                time = massage.time
-                velocity = massage.velocity
-                melody.append((temp[0], time, False, abs_time, 64))
-                melody.append((pitch, 0, True, abs_time, velocity))
-                temp[0] = pitch
+            elif len(temp) != 0 and massage.time != 0: 
+                if abs(temp[0]- massage.note)< 11:
+                    pitch = massage.note
+                    time = massage.time
+                    velocity = massage.velocity
+                    melody.append((temp[0], time, False, abs_time, 64))
+                    melody.append((pitch, 0, True, abs_time, velocity))
+                    temp[0] = pitch
 
         elif massage.type == 'note_off':
-            if massage.note in temp:
+            if massage.note in temp and abs(massage.note - melody[-1][0]) < 11:
                 pitch = massage.note
                 velocity = massage.velocity
                 time = massage.time
+                # Hitung waktu relatif terhadap sebelumnya
                 time_relative_to_predessecor = abs_time - melody[-1][3]
                 melody.append((pitch, time_relative_to_predessecor, False, abs_time, velocity))
                 temp.pop()
@@ -271,28 +273,33 @@ def process_database(folder_path):
     
     return file_features
 
-def rank_best_match(hummed_feature, feature_in_dir):
+
+from joblib import Parallel, delayed
+
+def rank_best_match(hummed_feature, feature_in_dir, n_jobs=-1):
     results = {}
-    
-    def compute_similarity(feature_file):
-        simm = 0
-        for feature in hummed_feature:
-            simm +=  0.45*calculate_cosine_similarity(feature[1], feature_file[1])
-            simm +=  0.45 * calculate_cosine_similarity(feature[2], feature_file[2])
-            simm +=  0.1 *calculate_cosine_similarity(feature[0], feature_file[0])
-        return simm
 
-    for key, feature_files in feature_in_dir.items():
-        max_simm = float('-inf')  
+    def compute_similarity_for_key(key, feature_files):
+        print("Current key: ", key)
+        max_simm = float('-inf')
+        for feature_file in feature_files:
+            simm = 0
+            for feature in hummed_feature:
+                simm += 0.45 * calculate_cosine_similarity(feature[1], feature_file[1])
+                simm += 0.45 * calculate_cosine_similarity(feature[2], feature_file[2])
+                simm += 0.1 * calculate_cosine_similarity(feature[0], feature_file[0])
+            max_simm = max(max_simm, simm)
+        return key, max_simm
+
+    results = Parallel(n_jobs=n_jobs)(
         
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            results_simm = executor.map(compute_similarity, feature_files)
-            max_simm = max(results_simm)
-        results[key] = max_simm
+        delayed(compute_similarity_for_key)(key, feature_files)
+        for key, feature_files in feature_in_dir.items()
+    )
 
-    sorted_results = {k: v for k, v in sorted(results.items(), key=lambda item: item[1], reverse=True)}
-    
+    sorted_results = {k: v for k, v in sorted(results, key=lambda item: item[1], reverse=True)}
     return sorted_results
+
 
 
 # Fungsi untuk menyimpan hasil ke file JSON

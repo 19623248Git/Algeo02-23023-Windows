@@ -6,11 +6,14 @@ import audio_retriev as ar
 import json
 import numpy as np
 import pandas as pd
-
+import time
 
 def main():
     isImage = False
     isAudio = False
+
+    #set the timer at start of the program
+    start_time = time.time()
 
     parser = argparse.ArgumentParser(description='Process query image to dataset')
 
@@ -164,6 +167,11 @@ def main():
     # Write the combined results back to the mapper.json file
     with open(mapper_path, 'w') as mapper_file:
         mapper_file.write(json_combined_results)
+
+    #stop the timer
+    end_time = time.time()
+
+    print("Total estimated time: ", end_time - start_time)
 
 if __name__ == "__main__":
     main()
