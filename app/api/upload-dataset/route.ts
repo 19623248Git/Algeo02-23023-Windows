@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
 
     const [coverFiles, musicFiles] = await Promise.all([coverProcess(), musicProcess()]);
 
-    exec(`python3 src/datasetProcess.py --session ${sessionId.value}`, (error, stdout, stderr) => {
+    exec(`python src/datasetProcess.py --session ${sessionId.value}`, (error, stdout, stderr) => {
       if (error) {
         console.log(`error: ${error.message}`);
       }

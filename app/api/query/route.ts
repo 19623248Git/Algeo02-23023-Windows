@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const { stdout, stderr } = await execAsync(`python3 src/retrieval.py --session ${sessionId.value}`);
+    const { stdout, stderr } = await execAsync(`python src/retrieval.py --session ${sessionId.value}`);
     console.log('Python stdout:', stdout);
     if (stderr) {
       console.error('Python stderr:', stderr);

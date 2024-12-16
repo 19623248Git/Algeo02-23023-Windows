@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     await fs.writeFile(savedFilePath, fileBuffer as any);
 
     if(fileExtension === '.wav'){
-      exec(`python3 src/processWavToMidi.py --path ${savedFilePath} --folder ${audioPath}`, (error, stdout, stderr) => {
+      exec(`python src/processWavToMidi.py --path ${savedFilePath} --folder ${audioPath}`, (error, stdout, stderr) => {
         if (error) {
           console.log(`error: ${error.message}`);
         }
