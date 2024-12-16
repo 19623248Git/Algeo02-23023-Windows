@@ -19,8 +19,10 @@ export default function RootLayout({
       <head>
         <Script 
           src="https://cdn.jsdelivr.net/npm/midi.js" 
+          // Menyertakan script sebelum interaksi untuk memastikan siap digunakan
           strategy="lazyOnload" 
         />
+        <script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script><script src="https://cdn.jsdelivr.net/combine/npm/tone@14.7.58,npm/@magenta/music@1.23.1/es6/core.js,npm/focus-visible@5,npm/html-midi-player@1.5.0"></script>
       </head>
       <body className={inter.className}>{children}</body>
     </html>

@@ -77,7 +77,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   return (
-    <div className="bg-[#1a2222e2] min-h-[115vh] py-4">
+    <div className="bg-[#003d5b] min-h-[115vh]">
       <Navbar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
       <Suspense fallback={<p>Loading...</p>}>
         <SearchParamHandler>
