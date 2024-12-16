@@ -26,9 +26,10 @@
 
 ``` powershell
 python --version #ensure the version is 3.10.11
-python3 -m venv venv
+python -m venv venv
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass #this is temporary
 venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 ### Third, install the dependencies:
