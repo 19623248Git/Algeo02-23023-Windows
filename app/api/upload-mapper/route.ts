@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Simpan file mapper yang baru
     const mapperBytes = await mapperFile.arrayBuffer();
-    await fs.writeFile(mapperFilePath, Buffer.from(mapperBytes));
+    await fs.writeFile(mapperFilePath, Buffer.from(mapperBytes) as any);
 
     return NextResponse.json({
       success: true,

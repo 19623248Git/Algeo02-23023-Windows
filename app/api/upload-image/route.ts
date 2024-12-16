@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     const fileBuffer = Buffer.from(await imageFile.arrayBuffer());
     const newFileName = "input.png";
     const savedFilePath = path.join(imagePath, newFileName);
-    await fs.writeFile(savedFilePath, fileBuffer);
+    await fs.writeFile(savedFilePath, fileBuffer as any);
 
     return NextResponse.json({
       success: true,
