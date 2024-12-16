@@ -1,0 +1,67 @@
+.audio-placeholder {
+    width: 300px; /* Tentukan lebar sesuai kebutuhan */
+    max-width: 100%; /* Agar responsif */
+    margin-top: 10px; /* Tambahkan jarak dari tombol jika diperlukan */
+  }
+
+.mic-container {
+    display: flex; /* Menggunakan Flexbox */
+    flex-direction: column;
+    row-gap: 20px;
+    justify-content: center; /* Memusatkan secara horizontal */
+    align-items: center; /* Memusatkan secara vertikal */
+    background-color: #282c34; /* Warna latar belakang opsional */
+  }
+
+.mic-button {
+    background-color: #ffffff;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    padding: 20px;
+    cursor: pointer;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    display: inline-block;
+    margin-bottom: 20px;
+    width: 100px;
+    height: 100px;
+  }
+  
+  .mic-button:hover {
+    background-color: #007bff;
+    transform: scale(1.1); 
+  }
+  
+  .mic-button:active {
+    transform: scale(0.95);
+  }
+  
+
+  .mic-button.recording {
+    background-color: #ff4b5c; 
+    border-color: #ff4b5c;
+    animation: pulse 1.5s infinite; 
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  .mic-button svg {
+    fill: #007bff;
+    transition: fill 0.3s ease;
+  }
+  
+  .mic-button.recording svg {
+    fill: white;
+  }
