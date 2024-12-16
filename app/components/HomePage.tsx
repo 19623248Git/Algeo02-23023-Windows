@@ -10,6 +10,8 @@ import Microphone from './MicrophoneParse';
 interface DatasetItem {
   song: string;
   cover: string;
+  audio_similarity?: number | null;
+  image_distance?: number | null;
 }
 
 interface HomepageProps {
@@ -18,11 +20,13 @@ interface HomepageProps {
   searchTerm: string;
 }
 
+
 const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
 
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [filteredData, setFilteredData] = useState<DatasetItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [datasetLoading, setdatasetLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [queried, setQueried] = useState(false);
 
@@ -52,15 +56,19 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
         )
       : data;
     setFilteredData(filtered);
+    console.log(filteredData);
+    const hasQueried = filtered.some(
+      entry => entry.audio_similarity != null || entry.image_distance != null
+    );
+    setQueried(hasQueried);
   }, [data, searchTerm]);
 
   const entries = filteredData.slice(start, end);
-
+  
 
   const [playingTracks, setPlayingTracks] = useState<{ [key: string]: boolean }>({});
   const parts = useRef<{ [key: string]: Tone.Part | null }>({}); 
 
-  // Function to play MIDI audio
   const playMidi = async (midiFile: string) => {
     try {
       if (playingTracks[midiFile]) {
@@ -88,8 +96,39 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       const response = await fetch(`/temp_uploads/${sessionId}/audio/${midiFile}`);
       const arrayBuffer = await response.arrayBuffer();
       const midi = new Midi(arrayBuffer);
-  
-      const synth = new Tone.Synth().toDestination();
+
+      const synth = new Tone.PolySynth(Tone.FMSynth, {
+        oscillator: {
+          type: 'triangle',  // Ganti square dengan sine untuk suara lebih lembut
+        },
+        envelope: {
+          attack: 0.008,   // Attack cepat untuk menyerupai piano
+          decay: 0.15,    // Sedikit lebih panjang untuk transisi alami
+          sustain: 0.25,   // Sustain lebih pendek untuk dinamika
+          release: 0.05    // Release lebih panjang untuk suara yang lebih natural
+        },
+        modulation: {
+          type: 'sine' // Modulation dengan sine untuk sedikit vibrato
+        }
+      });
+      
+      // Compressor untuk mengontrol transien dan menjaga keseimbangan
+      const compressor = new Tone.Compressor({
+        threshold: -10,  
+        ratio: 2,        
+        attack: 0.02,    
+        release: 0.15    
+      });
+      
+      // Filter untuk menyeimbangkan frekuensi tinggi
+      const filter = new Tone.Filter({
+        type: 'lowpass',
+        frequency: 2800,  
+        rolloff: -24
+      });
+      
+      synth.chain(compressor, filter, Tone.Destination);
+      synth.volume.value = -6;
   
       // Buat part baru untuk memainkan MIDI
       const timeBuffer = 0.001; 
@@ -117,6 +156,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       console.error("Error loading MIDI file:", error);
     }
   };
+
 
   const [activeTab, setActiveTab] = useState<'album' | 'music'>('album')
   const [uploadSuccessMessage, setUploadSuccessMessage] = useState<string | null>(null);
@@ -165,7 +205,6 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       return;
     }
 
-    setAudioFile(null);
     setImageFile(file);
     console.log("Image file selected:", file);
   
@@ -208,6 +247,8 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
     }
   }, [audioUrl]);
 
+
+
   const handleAudioUpload = async (event: React.ChangeEvent<HTMLInputElement> | Blob) => {
     let file: File | null = null;
 
@@ -225,7 +266,6 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
     }
 
     // Set file to state to show it in the UI
-    setImageFile(null);
     setAudioFile(file);
 
     const newAudioUrl = URL.createObjectURL(file);
@@ -372,6 +412,8 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       console.log("Please upload both datasets before submitting mapper.");
       return;
     }
+    
+    setdatasetLoading(true);
   
     // Jika dataset sudah ada, kirimkan dataset terlebih dahulu
     try {
@@ -390,7 +432,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
     // Setelah dataset diupload, kirimkan file mapper
     const formData = new FormData();
     formData.append("mapper", mapperFile);
-  
+    
     console.log("Uploading mapper to backend...");
     try {
       const response = await fetch("/api/upload-mapper", {
@@ -420,6 +462,8 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       setUploadFailMessage("Error uploading mapper.")
       setTimeout(() => setUploadFailMessage(null), 6000);
       console.log("Error uploading mapper:", error);
+    } finally {
+      setdatasetLoading(false);
     }
   };
 
@@ -464,14 +508,17 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
       console.error("Fetch error:", error);
     } finally {
       setQueried(false);
+      setImageFile(null);
+      setAudioFile(null);
     }
   }
 
   return (
     <section className="flex items-start min-h-screen gap-4">
       {/* Sidebar */}
-      <div className="flex flex-col gap-2 bg-[#2d2e37] rounded-r-2xl p-4 w-[265px] min-h-screen items-center shadow flex-shrink-0">
+      <div className="flex flex-col gap-2 bg-[#de9d34] rounded-r-2xl p-4 w-[265px] min-h-screen items-center shadow flex-shrink-0">
         <div className="flex flex-col items-center w-full gap-3 mb-2">
+          {/* Upload Preview */}
           <div className="flex flex-col items-center mt-4">
             {activeTab === 'album' && imageFile ? (
               <>
@@ -513,7 +560,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
 
         {/* File upload buttons */}
         <button
-          className="bg-[#512fed] hover:bg-[#7258e3] transform hover:scale-110 active:scale-100 text-white w-5/8 px-3 py-2 rounded-2xl mb-3 font-semibold"
+          className="bg-[#512fed] hover:bg-[#7258e3] transform hover:scale-110 active:scale-100 text-white w-5/8 px-3 py-2 rounded-2xl mb-3 shadow-md  font-semibold"
           onClick={activeTab === 'album' ? handleImageClick : handleAudioClick}
         >
           {activeTab === 'album' ? 'Upload Image' : 'Upload Audio'}
@@ -631,6 +678,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
             {coverDatasetFile && <p className="text-white">cover: {coverDatasetFile.name}</p>}
             {musicDatasetFile && <p className="text-white">music: {musicDatasetFile.name}</p>}
             {mapperFile && <p className="text-white">mapper: {mapperFile.name}</p>}
+            {datasetLoading && <p className="text-center text-red-700 py-1">Loading datasets & mapper</p>}
             {uploadSuccessMessage && <p className="text-white">Upload Berhasil</p>}
             {uploadFailMessage && <p className="text-white">{uploadFailMessage}</p>}
           </div>
@@ -638,8 +686,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
         
         <div className="">
           <PaginationControls
-            hasNextPage={end < data.length}
-            hasPrevPage={start > 0}
+
             totalEntries={data.length}
           />
         </div>
@@ -662,27 +709,45 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
           </button>
         </div>
         <h3 className="text-2xl font-bold text-white ">Available Songs</h3>
-        <div className="grid grid-cols-5 gap-2 ">
+        <div className="grid grid-cols-5 gap-2">
           {entries.length === 0 ? (
               <h2 className="col-span-5 mt-5 text-xl font-bold text-center text-white">No songs have been uploaded yet</h2>
             ) : (
               entries.map((entry, index) => (
             <div
               key={index}
-              className="flex flex-col h-auto p-2 overflow-hidden text-center text-white shadow rounded-xl max-h-72"
+              className="flex flex-col h-auto p-2 overflow-scroll text-center text-white shadow rounded-xl max-h-72 scrollbar-hide bg-[#077182] my-4"
             >
-              <img
+              <div className="relative group">
+              <Image
                 src={`/temp_uploads/${sessionId}/images/${entry.cover}`}
                 alt={`${entry.song}`}
-                className="object-cover w-full h-auto mb-1 border border-gray-300 max-h-40 rounded-xl"
+                className="object-cover w-full h-auto mb-1 max-h-40 rounded-xl"
+                width={400} // Specify the width
+                height={160} // Specify the height
+                layout="responsive" // Makes the image responsive
               />
+                {/* Tooltip */}
+                <span
+                  className="absolute z-20 px-1 py-1 text-xs text-white transition-opacity transform translate-x-1 bg-gray-700 opacity-0 group-hover:visible group-hover:opacity-100 text-start line-clamp-6 top-8"
+                  style={{ whiteSpace: 'nowrap' }}
+                >
+                  {entry.song}
+                </span>
+              </div>
               <div className="relative group">
                 <p className="pl-2 mb-2 overflow-hidden font-medium whitespace-normal text-start text-ellipsis hover:underline line-clamp-2">
                   {entry.song}
                 </p>
-                <div className="absolute z-20 invisible px-1 py-1 text-xs text-white transition-opacity transform translate-x-4 bg-gray-700 opacity-0 group-hover:visible group-hover:opacity-100 text-start line-clamp-6 top-8">
+                <p className="pl-2 mb-2 overflow-hidden font-medium whitespace-normal text-start text-ellipsis">
+                  {entry.audio_similarity ? `cosine_audio_distance: ${entry.audio_similarity}` : ""}
+                </p>
+                <p className="pl-2 mb-2 overflow-hidden font-medium whitespace-normal text-start text-ellipsis">
+                  {entry.image_distance ? `euclidean_image_distance: ${entry.image_distance}`: ""} 
+                </p>
+                {/* <div className="absolute z-20 invisible px-1 py-1 text-xs text-white transition-opacity transform translate-x-4 bg-gray-700 opacity-0 group-hover:visible group-hover:opacity-100 text-start line-clamp-6 top-8">
                   {entry.song}
-                </div>
+                </div> */}
               </div>
 
 
@@ -695,7 +760,7 @@ const Homepage: FC<HomepageProps> = ({ data, searchParams, searchTerm }) => {
                     ? "Stop MIDI"
                     : "Play MIDI"}
                 </button>
-              ) : entry.song.endsWith('.wav') ? (
+              ) : entry.song.endsWith('.wav') && sessionId != null ? (
                 <audio
                   controls
                   className="z-0 w-full mt-auto"

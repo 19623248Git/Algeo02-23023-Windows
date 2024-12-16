@@ -10,7 +10,7 @@
     row-gap: 20px;
     justify-content: center; /* Memusatkan secara horizontal */
     align-items: center; /* Memusatkan secara vertikal */
-    background-color: #282c34; /* Warna latar belakang opsional */
+    background-color: #de9d34; /* Warna latar belakang opsional */
   }
 
 .mic-button {

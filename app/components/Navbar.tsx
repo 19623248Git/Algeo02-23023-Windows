@@ -11,9 +11,9 @@ const Navbar: React.FC<NavbarProps> = ({ searchTerm, setSearchTerm }) => {
   };
 
   return (
-    <nav className="h-[52px] pb-3 border-b-4 border-zinc-800 shadow-md ">
-        <div className="flex flex-row gap-12 px-2 items-start">
-          <div className=" px-2 py-1 w-[250px] bg-[#712d8e49] rounded h-[40px]">
+    <nav className="h-auto pb-3 shadow-md bg-[#30638e] py-4 mb-4">
+        <div className="flex flex-row items-start gap-12 px-2">
+          <div className=" px-2 py-1 w-[250px] bg-[#30638e] rounded h-[40px]">
             <a 
               href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" 
               target="_blank" 
