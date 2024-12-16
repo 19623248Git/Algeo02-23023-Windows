@@ -13,7 +13,6 @@ async function ensureDirectoryExists(dir: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("goblog"); // ini apaan woi
     const data = await request.formData();
     const mapperFile = data.get('mapper') as File | null;
 

@@ -5,10 +5,11 @@ import path from 'path';
 type MapperEntry = {
   audio_file: string;
   pic_name: string;
+  audio_similarity?: number | null;
+  image_distance?: number | null;
 };
 
 export async function GET(request: NextRequest) {
-
   const sessionId = request.cookies.get('sessionId');
 
   if (!sessionId) {
@@ -21,8 +22,6 @@ export async function GET(request: NextRequest) {
   const uploadsDir = path.join(process.cwd(), 'public', 'temp_uploads', sessionId.value);
   const imageDir = path.join(uploadsDir, 'images');
   const audioDir = path.join(uploadsDir, 'audio');
-
-
   const mapperFilePath = path.join(uploadsDir, 'mapper.json');
 
   try {
@@ -36,11 +35,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get images and audio from files
+    // Get images and audio files in the upload directory
     const images = await fs.readdir(imageDir);
     const audio = await fs.readdir(audioDir);
 
-    // Filter dan buat data json berdasarkan mapper dan file yang ada
+    // Map and filter the dataset based on existing files and mapper data
     const dataset = mapper
       .map((entry: MapperEntry) => {
         const imageExists = images.includes(entry.pic_name);
@@ -48,13 +47,20 @@ export async function GET(request: NextRequest) {
 
         if (imageExists && audioExists) {
           return {
-            song: entry.audio_file, 
+            song: entry.audio_file,
             cover: entry.pic_name,
+            audio_similarity: entry.audio_similarity ?? null,
+            image_distance: entry.image_distance ?? null,
           };
         }
-        return null; 
+        return null;
       })
-      .filter((entry): entry is { song: string; cover: string } => entry !== null);
+      .filter((entry): entry is {
+        song: string;
+        cover: string;
+        audio_similarity: number | null;
+        image_distance: number | null;
+      } => entry !== null);
 
     if (dataset.length === 0) {
       return NextResponse.json(

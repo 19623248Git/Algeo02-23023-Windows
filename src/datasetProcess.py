@@ -4,6 +4,9 @@ import os
 import argparse
 
 def main():
+
+    print("dataset preprocessing start here!")
+
     parser = argparse.ArgumentParser(description='path to the dataset')
 
     parser.add_argument('--session', type=str, required=True)
